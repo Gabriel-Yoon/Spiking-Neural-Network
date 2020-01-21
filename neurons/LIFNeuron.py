@@ -60,8 +60,8 @@ class LIFNeuron():
         print ('latest spike timing : ', self.clk)
         print ('Membrane potential : ', self.Vm)
     
-    def spike_generator(self, ext_spk_pot, tnow):
-        if self.clk == 0:                           # pristine state, accruing the potential from the initial state
+def spike_generator(self, ext_spk_pot, tnow):
+        if self.clk == 0 and self.spk_bool == 0 and self.Vm + ext_spk_pot >=0: # pristine state, accruing the potential from the initial state
             if self.Vm + ext_spk_pot < self.V_th:   # if they are not over the threshold
                 self.Vm = self.Vm + ext_spk_pot     # just stack them!
                 self.spk_rcd = np.append(self.spk_rcd, [[tnow],[0]], axis = 1)
@@ -69,7 +69,7 @@ class LIFNeuron():
                 self.spk_rcd = np.append(self.spk_rcd, [[tnow],[1]], axis = 1)
                 self.clk = tnow
                 self.Vm = self.V_ref
-
+                self.spk_bool = 1
         else:   # spike has generated at least once from the previous activities -> most of them entering this phase
             if tnow > self.clk + self.t_ref:                     # not in the refractory period
                 if self.Vm + ext_spk_pot < self.V_th:        # not over the threshold
@@ -84,13 +84,18 @@ class LIFNeuron():
 
         self.pot_rcd = np.append(self.pot_rcd, [[tnow],[self.Vm]], axis = 1)
 
-test_neuron = LIFNeuron()
-input_spike = np.array([0])
+    def random_walk(self):
+        random_number = random.randint(0,1) - 0.5
+        self.Vm += random_number *0.2
+        
+    def leak(self):
+        self.Vm -= 0.1
 
-pot_rcd = np.array([0])
+test_neuron = LIFNeuron()
+input_spike = np.array([0.75])
 
 for i in range(timing):
-    rng = 0.0001*random.randint(-200,1000)
+    rng = 0.0001*random.randint(-600,1000)
     input_spike = np.append(input_spike, rng)
 
 while tnow < T:
@@ -98,7 +103,6 @@ while tnow < T:
         print("Simulation Executed")
 
     test_neuron.spike_generator(input_spike[timeflag], tnow)
-    pot_rcd = np.append(pot_rcd, test_neuron.Vm)
 
     tnow += dt
     timeflag += 1
