@@ -9,7 +9,7 @@ import time as tm
 <Basic parameters>
 """
 
-T       = 5 # total time to simulate (in msec)
+T       = 20 # total time to simulate (in msec)
 dt      = 0.0125 # simulation timestep
 tnow    = 0     # current time for the simulation (processing time)
 timeflag = 0    # for while loop execution
@@ -54,7 +54,7 @@ class LIFNeuron():
         self.V_spike = 1    # spike delta (V)
         self.label = 0      # the label of the neuron
         self.pot_rcd = np.array([[0],[0]])
-        self.spk_rcd = np.array([0])         # Spike time record paper in number-time
+        self.spk_rcd = np.array([[0],[0]])   # Spike time record paper in number-time
 
     def printParameters(self):
         print ('latest spike timing : ', self.clk)
@@ -64,8 +64,9 @@ class LIFNeuron():
         if self.clk == 0:                           # pristine state, accruing the potential from the initial state
             if self.Vm + ext_spk_pot < self.V_th:   # if they are not over the threshold
                 self.Vm = self.Vm + ext_spk_pot     # just stack them!
+                self.spk_rcd = np.append(self.spk_rcd, [[tnow],[0]], axis = 1)
             elif self.Vm + ext_spk_pot >= self.V_th: # time to spike!
-                self.spk_rcd = np.append(self.spk_rcd, tnow)
+                self.spk_rcd = np.append(self.spk_rcd, [[tnow],[1]], axis = 1)
                 self.clk = tnow
                 self.Vm = self.V_ref
 
@@ -73,10 +74,13 @@ class LIFNeuron():
             if tnow > self.clk + self.t_ref:                     # not in the refractory period
                 if self.Vm + ext_spk_pot < self.V_th:        # not over the threshold
                     self.Vm = self.Vm + ext_spk_pot             # stack the spike
+                    self.spk_rcd = np.append(self.spk_rcd, [[tnow],[0]], axis = 1)
                 elif self.Vm + ext_spk_pot >= self.V_th and tnow > self.clk + self.t_ref:  # time to spike!
-                    self.spk_rcd = np.append(self.spk_rcd, tnow)
+                    self.spk_rcd = np.append(self.spk_rcd, [[tnow],[1]], axis = 1)
                     self.Vm = self.V_ref
                     self.clk = tnow
+            else:
+                self.spk_rcd = np.append(self.spk_rcd, [[tnow],[0]], axis = 1)
 
         self.pot_rcd = np.append(self.pot_rcd, [[tnow],[self.Vm]], axis = 1)
 
@@ -86,10 +90,8 @@ input_spike = np.array([0])
 pot_rcd = np.array([0])
 
 for i in range(timing):
-    rng = 0.01*random.randint(0,20)
+    rng = 0.0001*random.randint(-200,1000)
     input_spike = np.append(input_spike, rng)
-
-for i in range(t)
 
 while tnow < T:
     if tnow == 0:
@@ -142,23 +144,24 @@ Utility functions
 These functions are used to graph the results of spikes, membrane potential, etc for neurons in the simulation.
 """
 def plot_neuron_behaviour(time, data, neuron_type, neuron_id, y_title):
+    #print ('Drawing graph with time.shape={}, data.shape={}'.format(time.shape, data.shape))
     plt.plot(time,data)
     plt.title('{} @ {}'.format(neuron_type, neuron_id))
     plt.ylabel(y_title)
     plt.xlabel('Time (msec)')
-    # Autoscale y-axis based on the data (is this needed??)
+    # Graph to the data with some headroom...
     y_min = 0
     y_max = max(data)*1.2
     if y_max == 0:
         y_max = 1
-    plt.ylim([y_min,y_max])
+    plt.ylim([y_min,y_max])   
     plt.show()
 
-def plot_membrane_potential(time, Vm, neuron_type, neuron_id=0):
-    plot_neuron_behaviour(time, Vm, neuron_type, neuron_id, y_title='Membrane potential (V)')
+def plot_membrane_potential(time, Vm, neuron_type, neuron_id = 0):
+    plot_neuron_behaviour(time, Vm, neuron_type, neuron_id, y_title = 'Membrane potential (V)')
 
-def plot_spikes(time, Vm, neuron_type, neuron_id=0):
-    plot_neuron_behaviour(time, Vm, neuron_type, neuron_id, y_title='Spike (V)')
+def plot_spikes(time, Vm, neuron_type, neuron_id = 0):
+    plot_neuron_behaviour(time, Vm, neuron_type, neuron_id, y_title = 'Spike (V)')
 
 """
 END : GRAPH_RESULTS
@@ -173,8 +176,9 @@ for neuron in range(num_neurons):
     stimulus[offset:stimulus_len] = neuron_input[0:stimulus_len - offset]
     neurons[layer][neuron].spike_generator(stimulus)
 
-plot_membrane_potential(neurons[0][0].time, neurons[0][0].Vm, 'Membrane Potential of {}'.format(neurons[0][0].type), neuron_id = "0/0")
-plot_spikes(neurons[0][0].time, neurons[0][0].spikes, 'Output spikes for {}'.format(neurons[0][0].type), neuron_id = "0/0")
+plot_membrane_potential(test_neuron.pot_rcd[0][:], test_neuron.pot_rcd[1][:], 'Membrane Potential for neuron {}'.format(test_neuron.label), neuron_id = "visible layer")
+plot_spikes(test_neuron.spk_rcd[0][:], test_neuron.spk_rcd[1][:], 'Output spikes for neuron {}'.format(test_neuron.label), neuron_id = "visible layer")
+
 
 
 
