@@ -13,9 +13,6 @@ time    = int(T/dt) #number of timesteps in the total simulation time
 inpt    = 1.0 #Neuron input voltage (in V)
 neuron_input = np.full((time),inpt)
 
-num_layers  = 2
-num_neurons = 100
-
 
 """
 -----------------------------------------------------------------------------------------------------------------------
@@ -26,7 +23,6 @@ class LIFNeuron():
     def __init__(self, neuron_label = "LIF", debug=True):
         # Simulation config (may not all be needed!!)
         self.dt = 0.125  # simulation time step
-        self.t_rest = 0  # initial refractory time
 
         # LIF Properties
         self.Vm     = np.array([0])         # Neuron potential (mV)
@@ -53,10 +49,12 @@ class LIFNeuron():
         # Seed the new array with previous value of last run
         Vm[-1] = self.Vm[-1]
 
+        # Debug terminal
         if self.debug:
             print ('LIFNeuron.spike_generator({}).initial_state(input={}, duration={}, initial Vm={}, t={}, debug={})'
                    .format(self.neuron_label, neuron_input.shape, duration, Vm[-1], self.t, self.debug))
 
+        # Spike generation during the 'duration'
         for i in range(duration):
             if self.debug == 'INFO':
                 print ('Index {}'.format(i))
@@ -78,7 +76,7 @@ class LIFNeuron():
 
             self.t += self.dt
 
-        # Save state
+        # Save state to record over simulation time
         self.Vm = np.append(self.Vm, Vm)
         self.spikes = np.append(self.spikes, spikes)
         self.time = np.append(self.time, time)
@@ -98,6 +96,9 @@ END : LIF Neuron model
 START : Create neural network
 -----------------------------------------------------------------------------------------------------------------------
 """
+
+num_layers  = 2
+num_neurons = 100
 
 def create_neurons(num_layers, num_neurons, debug=True):
     neurons = []
@@ -198,9 +199,9 @@ END : GRAPH_RESULTS
 -----------------------------------------------------------------------------------------------------------------------
 """
 
-neurons = create_neurons(num_layers, num_neurons, debug=False)
+neurons = create_neurons(num_layers, num_neurons, debug=False) # Created neural network with num_layers and num_neurons
 
-stimulus_len = len(neuron_input)
+stimulus_len = len(neuron_input) # Length of the stiumulus is analogous to that of the neuron_input
 layer = 0
 for neuron in range(num_neurons):
     offset = random.randint(0,100)  #Simulates stimulus starting at different times
@@ -209,4 +210,4 @@ for neuron in range(num_neurons):
     neurons[layer][neuron].spike_generator(stimulus)
 
 plot_membrane_potential(neurons[0][0].time, neurons[0][0].Vm, 'Membrane Potential of {}'.format(neurons[0][0].type), neuron_id = "0/0")
-plot_spikes(neurons[0][0].time, neurons[0][0].spikes, 'Output spikes for {}'.format(neurons[0][0].type), neuron_id = "0/0")
+plot_spikes(neurons[0][0].time, neurons[0][0].spikes, 'Output spikes for {}'.format(neurons[0][0].type), neuron_id = "0/0") 
