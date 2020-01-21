@@ -2,6 +2,8 @@ import numpy as np
 import random
 import pandas as pd
 import matplotlib.pyplot as plt
+import time as tm
+
 
 """
 <Basic parameters>
@@ -9,10 +11,25 @@ import matplotlib.pyplot as plt
 
 T       = 50 # total time to simulate (in msec)
 dt      = 0.0125 # simulation timestep
-time    = int(T/dt) #number of timesteps in the total simulation time
+timing    = int(T/dt) #number of timesteps in the total simulation time
 inpt    = 1.0 #Neuron input voltage (in V)
 neuron_input = np.full((time),inpt)
+num_neurons = 25
 
+STD_CLK = tm.time_ns()
+"""
+-----------------------------------------------------------------------------------------------------------------------
+START : RECORD Page
+"""
+# I'm thinking of appending the export spike information to the record paper
+
+spk_rcd = np.array([[0],[0]])         # Spike record paper in number-time
+
+
+"""
+END : RECORD Page
+-----------------------------------------------------------------------------------------------------------------------
+"""
 
 """
 -----------------------------------------------------------------------------------------------------------------------
@@ -20,70 +37,42 @@ START : LIF neuron model
 """
 
 class LIFNeuron():
-    def __init__(self, neuron_label = "LIF", debug=True):
+    def __init__(self):
         # Simulation config (may not all be needed!!)
         self.dt = 0.125  # simulation time step
 
         # LIF Properties
-        self.Vm     = np.array([0])         # Neuron potential (mV)
-        self.time   = np.array([0])       # Time duration for the neuron (needed?)
-        self.spikes = np.array([0])     # Output (spikes) for the neuron
+        self.Vm     = 0       # Neuron potential (mV) over time
+        self.time   = 0       # Time duration for the neuron
 
+        self.clk    = 0        #뉴런 자체 clock
         self.type   = 'Leaky Integrate and Fire'
-        self.state  = 'active'
-        self.t_ref  = 4    # refractory period (ms)
-        self.Vth    = 0.75  # = 1  #spike threshold
+        self.state  = 1         # 1 for active and 0 for inactive(refractory)
+        self.t_ref  = 0.05    # refractory period (ms)
+        self.ref_flag = int(self.t_ref/dt)  # numver of refractory times in the sim timestep
+        self.V_th    = 0.75  #spike threshold voltage
+        self.V_ref  = 0     #refractory time voltage
         self.V_spike = 1    # spike delta (V)
-        self.neuron_label = neuron_label
-        self.debug = debug
-        if self.debug:
-            print ('LIFNeuron({}): Created {} neuron starting at time {}'.format(self.neuron_label, self.type, self.t))
+        self.label = 0
 
-    def spike_generator(self, neuron_input):
-        # Create local arrays for this run
-        duration = len(neuron_input)
-        Vm = np.zeros(duration)  # len(time)) # potential (V) trace over time
-        time = np.arange(int(self.t / self.dt), int(self.t / self.dt) + duration)
-        spikes = np.zeros(duration)  # len(time))
+    def printParameters(self):
+        print ('뉴런 자체 timing : ', self.time)
+        print ('Membrane potential : ', self.Vm)
+        print ('스파이크 history : ', self.spk_his)
 
-        # Seed the new array with previous value of last run
-        Vm[-1] = self.Vm[-1]
+    def spk_gen_rcd(self, ext_spk_pot):
+        if self.state == 1:     # if neuron is in the active state
+            if self.Vm + ext_spk_pot < self.V_th:        # if not over than the threshold
+                self.Vm = self.Vm + ext_spk_pot
+            else:   # over the threshold
+                self.Vm = self.V_ref
+                self.spk_his = np.append(self.spk_his, [[CLK-STD_CLK],[1]], axis=1)
+                self.state = 0
+        else:
+            self.Vm = 
 
-        # Debug terminal
-        if self.debug:
-            print ('LIFNeuron.spike_generator({}).initial_state(input={}, duration={}, initial Vm={}, t={}, debug={})'
-                   .format(self.neuron_label, neuron_input.shape, duration, Vm[-1], self.t, self.debug))
+        self.clk += dt
 
-        # Spike generation during the 'duration'
-        for i in range(duration):
-            if self.debug == 'INFO':
-                print ('Index {}'.format(i))
-
-            if self.t > self.t_rest:
-                Vm[i] = Vm[i - 1] + (-Vm[i - 1] + neuron_input[i - 1] * self.Rm) / self.tau_m * self.dt
-
-                if self.debug == 'INFO':
-                    print(
-                    'spike_generator({}): i={}, self.t={}, Vm[i]={}, neuron_input={}, self.Rm={}, self.tau_m * self.dt = {}'
-                    .format(self.neuron_label, i, self.t, Vm[i], neuron_input[i], self.Rm, self.tau_m * self.dt))
-
-                if Vm[i] >= self.Vth:
-                    spikes[i] += self.V_spike
-                    self.t_rest = self.t + self.tau_ref
-                    if self.debug:
-                        print ('*** LIFNeuron.spike_generator({}).spike=(self.t_rest={}, self.t={}, self.tau_ref={})'
-                               .format(self.neuron_label, self.t_rest, self.t, self.tau_ref))
-
-            self.t += self.dt
-
-        # Save state to record over simulation time
-        self.Vm = np.append(self.Vm, Vm)
-        self.spikes = np.append(self.spikes, spikes)
-        self.time = np.append(self.time, time)
-
-        if self.debug:
-            print ('LIFNeuron.spike_generator({}).exit_state(Vm={} at iteration i={}, time={})'
-                   .format(self.neuron_label, self.Vm.shape, i, self.t))
 
             # return time, Vm, output
 
@@ -100,14 +89,12 @@ START : Create neural network
 num_layers  = 2
 num_neurons = 100
 
-def create_neurons(num_layers, num_neurons, debug=True):
+def create_neurons(num_layers, num_neurons):
     neurons = []
     for layer in range(num_layers):
-        if debug:
-            print ('create_neurons() : Create layer{}'. format(layer))
         neuron_layer=[]
         for count in range(num_neurons):
-            neuron_layer.append(LIFNeuron(debug=debug))
+            neuron_layer.append(LIFNeuron())
         neurons.append(neuron_layer)
     return neurons
 
