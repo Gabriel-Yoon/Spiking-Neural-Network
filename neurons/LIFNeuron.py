@@ -145,8 +145,9 @@ These functions are used to graph the results of spikes, membrane potential, etc
 """
 def plot_neuron_behaviour(time, data, neuron_type, neuron_id, y_title):
     #print ('Drawing graph with time.shape={}, data.shape={}'.format(time.shape, data.shape))
+    plt.figure(figsize=(20,10))
     plt.plot(time,data)
-    plt.title('{} @ {}'.format(neuron_type, neuron_id))
+    plt.title('{} at {}'.format(neuron_type, neuron_id))
     plt.ylabel(y_title)
     plt.xlabel('Time (msec)')
     # Graph to the data with some headroom...
@@ -154,7 +155,7 @@ def plot_neuron_behaviour(time, data, neuron_type, neuron_id, y_title):
     y_max = max(data)*1.2
     if y_max == 0:
         y_max = 1
-    plt.ylim([y_min,y_max])   
+    plt.ylim([y_min,y_max]) 
     plt.show()
 
 def plot_membrane_potential(time, Vm, neuron_type, neuron_id = 0):
